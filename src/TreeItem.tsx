@@ -7,6 +7,7 @@ interface RenderableTreeItem {
   label?: string;
   additionalInfo?: string;
   text?: string;
+  hidden?: boolean;
 }
 
 const truncated = (str: string) =>
@@ -14,8 +15,8 @@ const truncated = (str: string) =>
 
 const camelCaseToSentenceCase = (str: string) =>
   str
-    .replace(/[A-Z]/g, c => ` ${c.toLowerCase()}`)
-    .replace(/^\w/, c => c.toUpperCase());
+    .replace(/[A-Z]/g, (c) => ` ${c.toLowerCase()}`)
+    .replace(/^\w/, (c) => c.toUpperCase());
 
 interface TreeItemProps {
   data: AccessibilityTreeItem;
@@ -24,7 +25,7 @@ interface TreeItemProps {
 const TreeItem: React.FC<TreeItemProps> = ({ data }) => {
   const renderableItem: RenderableTreeItem = {
     ...data,
-    role: data.role || 'unknown'
+    role: data.role || 'unknown',
   };
 
   if (data.role === 'list') {

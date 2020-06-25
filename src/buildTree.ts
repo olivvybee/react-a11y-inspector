@@ -27,15 +27,19 @@ const buildSubTree = (
   parent?: AccessibilityTreeItem,
   childIndex?: number
 ) => {
-  const { role, name, firstChild } = root;
+  const { role, roleDescription, name, firstChild } = root;
 
   const treeItem: AccessibilityTreeItem = {
     role,
     label: name || undefined,
     children: [],
     parent,
-    index: childIndex || 0
+    index: childIndex || 0,
   };
+
+  if (roleDescription && roleDescription.includes('aria-hidden')) {
+    treeItem.hidden = true;
+  }
 
   if (role === 'genericContainer') {
     treeItem.role = 'group';
@@ -76,9 +80,46 @@ const buildSubTree = (
   return [treeItem];
 };
 
+const replaceAriaHiddenForSubTree = (root: Element) => {
+  if (root.getAttribute('aria-hidden') === 'true') {
+    const existingRoleDescription =
+      root.getAttribute('aria-roledescription') || '';
+    root.setAttribute(
+      'aria-roleDescription',
+      `${existingRoleDescription}_aria-hidden`
+    );
+  }
+
+  for (let i = 0; i < root.children.length; i++) {
+    replaceAriaHiddenForSubTree(root.children[i]);
+  }
+};
+
+const resetAriaHiddenForSubTree = (root: Element) => {
+  const roleDescription = root.getAttribute('aria-roledescription');
+  if (roleDescription && roleDescription.includes('_aria-hidden')) {
+    const fixedDescription = roleDescription.replace('_aria-hidden', '');
+    if (fixedDescription.length > 0) {
+      root.setAttribute('aria-roledescription', fixedDescription);
+    } else {
+      root.removeAttribute('aria-roledescription');
+    }
+  }
+
+  for (let i = 0; i < root.children.length; i++) {
+    resetAriaHiddenForSubTree(root.children[i]);
+  }
+};
+
 export const buildTree = async () => {
   const topLevelNode = document.getElementById('node-under-test')?.children[0];
   let topLevelAccessibilityNode;
+
+  if (!topLevelNode) {
+    return undefined;
+  }
+
+  replaceAriaHiddenForSubTree(topLevelNode);
 
   try {
     topLevelAccessibilityNode = await (window as any).getComputedAccessibleNode(
@@ -86,9 +127,13 @@ export const buildTree = async () => {
     );
   } catch (error) {}
 
-  if (!topLevelNode || !topLevelAccessibilityNode) {
+  if (!topLevelAccessibilityNode) {
     return undefined;
   }
 
-  return buildSubTree(topLevelAccessibilityNode)[0];
+  const tree = buildSubTree(topLevelAccessibilityNode)[0];
+
+  resetAriaHiddenForSubTree(topLevelNode);
+
+  return tree;
 };
