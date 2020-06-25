@@ -41,6 +41,14 @@ const buildSubTree = (
     treeItem.hidden = true;
   }
 
+  if (role === 'presentation') {
+    treeItem.hidden = true;
+  }
+
+  if (role === 'svgRoot') {
+    treeItem.role = 'image';
+  }
+
   if (role === 'genericContainer') {
     treeItem.role = 'group';
 
@@ -81,11 +89,14 @@ const buildSubTree = (
 };
 
 const replaceAriaHiddenForSubTree = (root: Element) => {
-  if (root.getAttribute('aria-hidden') === 'true') {
+  if (
+    root.getAttribute('aria-hidden') === 'true' ||
+    root.getAttribute('role') === 'presentation'
+  ) {
     const existingRoleDescription =
       root.getAttribute('aria-roledescription') || '';
     root.setAttribute(
-      'aria-roleDescription',
+      'aria-roledescription',
       `${existingRoleDescription}_aria-hidden`
     );
   }
